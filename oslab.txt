@@ -360,249 +360,251 @@ done
 //system calls
 
 #include <stdio.h>
-#include <unistd.h>
-#include <sys/wait.h>
-#include <sys/types.h>
-#include <fcntl.h>
-#include <sys/stat.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <string.h>
- 
-void process_related() {
-    int choice;
-    pid_t pid;
-   
-    printf("\nProcess Related System Calls:\n");
-    printf("1. fork()\n");
-    printf("2. exit()\n");
-    printf("3. wait()\n");
-    printf("4. exec()\n");
-    printf("Enter your choice: ");
-    scanf("%d", &choice);
- 
-    switch(choice) {
-        case 1:
-            pid = fork();
-            if (pid == 0) {
-                printf("This is the child process. PID = %d\n", getpid());
-                exit(0);
-            } else {
-                printf("This is the parent process. PID = %d\n", getpid());
-            }
-            break;
- 
-        case 2:
-            printf("Exiting with status 0...\n");
-            exit(0);
-            break;
- 
-        case 3:
-            pid = fork();
-            if (pid == 0) {
-                printf("Child process. PID = %d\n", getpid());
-                exit(0);
-            } else {
-                wait(NULL);
-                printf("Child process finished. Parent PID = %d\n", getpid());
-            }
-            break;
- 
-        case 4:
-            pid = fork();
-            if (pid == 0) {
-                printf("Child process executing ls command:\n");
-                execl("/bin/ls", "ls", NULL);
-                exit(0);
-            } else {
-                wait(NULL);
-                printf("ls command executed by child process.\n");
-            }
-            break;
- 
-        default:
-            printf("Invalid choice.\n");
-            break;
-    }
-}
- 
-void communication_related() {
-    int choice;
-    int fd[2];
-    char write_msg[20] = "Hello, World!";
-    char read_msg[20];
-    pid_t pid;
- 
-    printf("\nCommunication Related System Calls:\n");
-    printf("1. pipe()\n");
-    printf("2. FIFO (named pipe)\n");
-    printf("Enter your choice: ");
-    scanf("%d", &choice);
- 
-    switch(choice) {
-        case 1:
-            if (pipe(fd) == -1) {
-                perror("Pipe failed");
-                exit(1);
-            }
- 
-            pid = fork();
-            if (pid == 0) {
-                close(fd[0]); // Close unused read end
-                write(fd[1], write_msg, strlen(write_msg)+1);
-                close(fd[1]);
-            } else {
-                close(fd[1]); // Close unused write end
-                read(fd[0], read_msg, sizeof(read_msg));
-                printf("Received message: %s\n", read_msg);
-                close(fd[0]);
-            }
-            break;
- 
-        case 2:
-            mkfifo("/tmp/myfifo", 0666);
-            pid = fork();
- 
-            if (pid == 0) {
-                int fd = open("/tmp/myfifo", O_WRONLY);
-                write(fd, write_msg, strlen(write_msg)+1);
-                close(fd);
-                exit(0);
-            } else {
-                int fd = open("/tmp/myfifo", O_RDONLY);
-                read(fd, read_msg, sizeof(read_msg));
-                printf("Received message: %s\n", read_msg);
-                close(fd);
-            }
-            unlink("/tmp/myfifo");
-            break;
- 
-        default:
-            printf("Invalid choice.\n");
-            break;
-    }
-}
- 
-void file_related() {
-    int choice;
-    int fd;
-    char buffer[100];
- 
-    printf("\nFile Related System Calls:\n");
-    printf("1. open(), write(), close()\n");
-    printf("2. link(), stat(), unlink()\n");
-    printf("Enter your choice: ");
-    scanf("%d", &choice);
- 
-    switch(choice) {
-        case 1:
-            fd = open("example.txt", O_WRONLY | O_CREAT, 0644);
-            if (fd == -1) {
-                perror("Error opening file");
-                exit(1);
-            }
- 
-            write(fd, "Hello, World!\n", 14);
-            close(fd);
-            printf("File written and closed successfully.\n");
- 
-            fd = open("example.txt", O_RDONLY);
-            read(fd, buffer, 100);
-            printf("File content: %s", buffer);
-            close(fd);
-            break;
- 
-        case 2:
-            link("example.txt", "example_link.txt");
-            struct stat file_stat;
-            stat("example_link.txt", &file_stat);
-            printf("File size: %ld bytes\n", file_stat.st_size);
-            unlink("example_link.txt");
-            printf("Link removed.\n");
-            break;
- 
-        default:
-            printf("Invalid choice.\n");
-            break;
-    }
-}
- 
-void info_related() {
-    int choice;
- 
-    printf("\nInformation Related System Calls:\n");
-    printf("1. alarm()\n");
-    printf("2. sleep()\n");
-    printf("Enter your choice: ");
-    scanf("%d", &choice);
- 
-    switch(choice) {
-        case 1:
-            printf("Setting an alarm for 5 seconds...\n");
-            alarm(5);
-            sleep(6); // To show the alarm trigger
-            break;
- 
-        case 2:
-            printf("Sleeping for 3 seconds...\n");
-            sleep(3);
-            printf("Woke up after 3 seconds.\n");
-            break;
- 
-        default:
-            printf("Invalid choice.\n");
-            break;
-    }
-}
- 
+#include <errno.h>
+#include <signal.h>
+#include <sys/utsname.h>
+
+// Process related system calls
+void fork_example();
+void exit_example();
+void wait_example();
+void kill_example();
+void exec_example();
+
+// File related system calls
+void open_read_write_example();
+void link_unlink_example();
+void stat_example();
+
+// Communication related system calls
+void pipe_example();
+void fifo_example();
+
+// Information related system calls
+void getpid_example();
+void getppid_example();
+void uname_example();
+
 int main() {
     int choice;
- 
     while(1) {
-        printf("\nMenu:\n");
-        printf("1. Process Related\n");
-        printf("2. Communication Related\n");
-        printf("3. File Related\n");
-        printf("4. Information Related\n");
+        printf("\nMenu for System Call\n");
+        printf("1. Process related system calls\n");
+        printf("2. File related system calls\n");
+        printf("3. Communication related system calls\n");
+        printf("4. Information related system calls\n");
         printf("5. Exit\n");
         printf("Enter your choice: ");
         scanf("%d", &choice);
- 
         switch(choice) {
             case 1:
-                process_related();
+                printf("1. Fork\n2. Exec\n3. Wait\n4. Kill\n5. Exit\n");
+                printf("Enter your choice: ");
+                scanf("%d", &choice);
+                if(choice == 1) fork_example();
+                else if(choice == 2) exec_example();
+                else if(choice == 3) wait_example();
+                else if(choice == 4) kill_example();
+                else if(choice == 5) exit_example();
                 break;
- 
             case 2:
-                communication_related();
+                printf("1. Open, Read, Write, Close\n2. Link, Unlink\n3. Stat\n");
+                printf("Enter your choice: ");
+                scanf("%d", &choice);
+                if(choice == 1) open_read_write_example();
+                else if(choice == 2) link_unlink_example();
+                else if(choice == 3) stat_example();
                 break;
- 
             case 3:
-                file_related();
+                printf("1. Pipe\n2. FIFO\n");
+                printf("Enter your choice: ");
+                scanf("%d", &choice);
+                if(choice == 1) pipe_example();
+                else if(choice == 2) fifo_example();
                 break;
- 
             case 4:
-                info_related();
+                printf("1. Get PID\n2. Get PPID\n3. Uname\n");
+                printf("Enter your choice: ");
+                scanf("%d", &choice);
+                if(choice == 1) getpid_example();
+                else if(choice == 2) getppid_example();
+                else if(choice == 3) uname_example();
                 break;
- 
             case 5:
-                printf("Exiting...\n");
                 exit(0);
- 
             default:
-                printf("Invalid choice.\n");
-                break;
+                printf("Invalid choice! Please try again.\n");
         }
     }
- 
     return 0;
 }
 
+// Process related system calls
+void fork_example() {
+    pid_t pid = fork();
+    if (pid == 0) {
+        printf("Child process: PID = %d\n", getpid());
+    } else {
+        printf("Parent process: PID = %d\n", getpid());
+        wait(NULL); // Wait for child to finish
+    }
+}
 
-/*1
-1
-3
-1
-5*/
+void exit_example() {
+    printf("This process will terminate using exit().\n");
+    exit(0);
+}
+
+void wait_example() {
+    pid_t pid = fork();
+    if (pid == 0) {
+        printf("Child process running. PID = %d\n", getpid());
+        sleep(2); // Simulate some work in child
+        exit(0);
+    } else {
+        printf("Parent waiting for child to terminate.\n");
+        wait(NULL);
+        printf("Child terminated.\n");
+    }
+}
+
+void kill_example() {
+    pid_t pid = fork();
+    if (pid == 0) {
+        printf("Child process running. PID = %d\n", getpid());
+        while(1); // Infinite loop
+    } else {
+        sleep(1);
+        printf("Killing child process.\n");
+        kill(pid, SIGKILL); // Terminate the child process
+        wait(NULL);
+    }
+}
+
+void exec_example() {
+    pid_t pid = fork();
+    if (pid == 0) {
+        execl("/bin/ls", "ls", NULL); // Replace child process with `ls` command
+    } else {
+        wait(NULL);
+    }
+}
+
+// File related system calls
+void open_read_write_example() {
+    int fd;
+    char buffer[100];
+    fd = open("test.txt", O_CREAT | O_RDWR, 0644);
+    if (fd == -1) {
+        perror("Error opening file");
+        return;
+    }
+    write(fd, "Hello there!\n", 14);
+    lseek(fd, 0, SEEK_SET); // Move to beginning of the file
+    read(fd, buffer, sizeof(buffer));
+    printf("File content: %s\n", buffer);
+    close(fd);
+}
+
+void link_unlink_example() {
+    link("test.txt", "test_link.txt");
+    printf("Link created.\n");
+    unlink("test_link.txt");
+    printf("Link removed.\n");
+}
+
+void stat_example() {
+    struct stat fileStat;
+    if(stat("test.txt",&fileStat) < 0) {
+        perror("Error getting file stats");
+        return;
+    }
+    printf("Information for test.txt:\n");
+    printf("File Size: \t\t%ld bytes\n", fileStat.st_size);
+    printf("Number of Links: \t%ld\n", fileStat.st_nlink);
+    printf("File inode: \t\t%ld\n", fileStat.st_ino);
+    printf("File Permissions: \t");
+    printf( (S_ISDIR(fileStat.st_mode)) ? "d" : "-");
+    printf( (fileStat.st_mode & S_IRUSR) ? "r" : "-");
+    printf( (fileStat.st_mode & S_IWUSR) ? "w" : "-");
+    printf( (fileStat.st_mode & S_IXUSR) ? "x" : "-");
+    printf("\n");
+}
+
+// Communication related system calls
+void pipe_example() {
+    int fd[2];
+    pid_t pid;
+    char buffer[100];
+    if (pipe(fd) == -1) {
+        perror("Pipe failed");
+        return;
+    }
+    pid = fork();
+    if (pid == 0) {
+        // Child process
+        close(fd[0]); // Close read end
+        write(fd[1], "Hello from child!\n", 18);
+        close(fd[1]);
+    } else {
+        // Parent process
+        close(fd[1]); // Close write end
+        read(fd[0], buffer, sizeof(buffer));
+        printf("Parent received: %s\n", buffer);
+        close(fd[0]);
+        wait(NULL);
+    }
+}
+
+void fifo_example() {
+    char *fifo = "/tmp/myfifo";
+    mkfifo(fifo, 0666);
+    if(fork() == 0) {
+        int fd = open(fifo, O_WRONLY);
+        write(fd, "Hello from FIFO!\n", 16);
+        close(fd);
+    } else {
+        char buffer[100];
+        int fd = open(fifo, O_RDONLY);
+        read(fd, buffer, sizeof(buffer));
+        printf("Parent received: %s\n", buffer);
+        close(fd);
+        wait(NULL);
+    }
+    unlink(fifo);
+}
+
+// Information related system calls
+void getpid_example() {
+    printf("Process ID: %d\n", getpid());
+}
+
+void getppid_example() {
+    printf("Parent Process ID: %d\n", getppid());
+}
+
+void uname_example() {
+    struct utsname buffer;
+    if (uname(&buffer) < 0) {
+        perror("Uname failed");
+        return;
+    }
+    printf("Group ID: %d\n", getgid());
+    printf("System page size: %ld bytes\n", sysconf(_SC_PAGESIZE));
+    printf("System name: %s\n", buffer.sysname);
+    printf("Node name: %s\n", buffer.nodename);
+    printf("Release: %s\n", buffer.release);
+    printf("Version: %s\n", buffer.version);
+    printf("Machine: %s\n", buffer.machine);
+}
+
 
 -------------------------------------------------------------------------CSAN disk scheduling---------------------------------------------------
 #include <stdio.h>
@@ -1152,113 +1154,93 @@ int main() {
 -------------------------------------------------------------------------Reader-writer mutex----------------------------------------------------
 //reader writer mutex
 
-#include <pthread.h>
 #include <stdio.h>
+#include <pthread.h>
+#include <unistd.h>
 #include <stdlib.h>
 
-
-// Shared data and synchronization variables
-int shared_data = 0;
-int reader_count = 0;
-pthread_mutex_t resource_mutex;      // Mutex for exclusive access to shared data
-pthread_mutex_t reader_count_mutex;   // Mutex for protecting reader count
-int max_operations = 5; // Number of iterations for readers and writers
-
+pthread_mutex_t mutex;   // Mutex for reader count
+pthread_mutex_t wrt;     // Mutex for writer access
+int read_count = 0;      // Number of active readers
 
 // Reader function
-void* reader(void* arg) {
-    int reader_id = *((int*)arg);
-    free(arg);
-    int read_count = 0;
+void *reader(void *arg) {
+    int reader_id = *((int *)arg); 
+    printf("Reader %d is trying to read\n", reader_id);
 
-
-    while (read_count < max_operations) { 
-        // Entry section for reader
-        pthread_mutex_lock(&reader_count_mutex);
-        reader_count++;
-        if (reader_count == 1) {
-            pthread_mutex_lock(&resource_mutex); // First reader locks the resource
-        }
-        pthread_mutex_unlock(&reader_count_mutex);
-
-
-        // Reading section
-        printf("Reader %d is reading the shared data: %d\n", reader_id, shared_data);
-
-
-        // Exit section for reader
-        pthread_mutex_lock(&reader_count_mutex);
-        reader_count--;
-        if (reader_count == 0) {
-            pthread_mutex_unlock(&resource_mutex); // Last reader unlocks the resource
-        }
-        pthread_mutex_unlock(&reader_count_mutex);
-
-
-        read_count++; // Increment read count
+    pthread_mutex_lock(&mutex);  
+    read_count++;
+    if (read_count == 1) {
+        pthread_mutex_lock(&wrt);  // First reader locks the writer
     }
+    pthread_mutex_unlock(&mutex);  
 
+    printf("Reader %d is reading\n", reader_id);
+    sleep(1);  
+    printf("Reader %d has finished reading\n", reader_id);
+
+    pthread_mutex_lock(&mutex);  
+    read_count--;
+    if (read_count == 0) {
+        pthread_mutex_unlock(&wrt);  // Last reader unlocks the writer
+    }
+    pthread_mutex_unlock(&mutex);  
 
     return NULL;
 }
-
 
 // Writer function
-void* writer(void* arg) {
-    int writer_id = *((int*)arg);
-    free(arg);
-    int write_count = 0;
+void *writer(void *arg) {
+    int writer_id = *((int *)arg); 
+    printf("Writer %d is trying to access the resource\n", writer_id);
 
+    pthread_mutex_lock(&wrt);  // Writer locks the resource
+    printf("Writer %d is writing\n", writer_id);
+    sleep(1);  
+    printf("Writer %d has finished writing\n", writer_id);
 
-    while (write_count < max_operations) { 
-        pthread_mutex_lock(&resource_mutex);  // Writer locks the resource
-        shared_data++;
-        printf("Writer %d updated shared data to: %d\n", writer_id, shared_data);
-        pthread_mutex_unlock(&resource_mutex);  // Writer releases the resource
-        
-        write_count++; // Increment write count
-    }
-
+    pthread_mutex_unlock(&wrt);  // Writer unlocks the resource
 
     return NULL;
 }
 
-
 int main() {
-    pthread_t readers[5], writers[2];
-    pthread_mutex_init(&resource_mutex, NULL);
-    pthread_mutex_init(&reader_count_mutex, NULL);
+    int num_readers = 5, num_writers = 3;
 
+    pthread_t *read = malloc(num_readers * sizeof(pthread_t));
+    pthread_t *write = malloc(num_writers * sizeof(pthread_t));
+    int *reader_ids = malloc(num_readers * sizeof(int));
+    int *writer_ids = malloc(num_writers * sizeof(int));
 
-    // Create reader threads
-    for (int i = 0; i < 5; i++) {
-        int* id = malloc(sizeof(int));
-        *id = i + 1;
-        pthread_create(&readers[i], NULL, reader, id);
+    pthread_mutex_init(&mutex, NULL);
+    pthread_mutex_init(&wrt, NULL);
+
+    for (int i = 0; i < num_readers; i++) {
+        reader_ids[i] = i + 1;
+        pthread_create(&read[i], NULL, reader, &reader_ids[i]);
     }
 
-
-    // Create writer threads
-    for (int i = 0; i < 2; i++) {
-        int* id = malloc(sizeof(int));
-        *id = i + 1;
-        pthread_create(&writers[i], NULL, writer, id);
+   
+    for (int i = 0; i < num_writers; i++) {
+        writer_ids[i] = i + 1;
+        pthread_create(&write[i], NULL, writer, &writer_ids[i]);
     }
 
-
-    // Wait for threads to complete
-    for (int i = 0; i < 5; i++) {
-        pthread_join(readers[i], NULL);
-    }
-    for (int i = 0; i < 2; i++) {
-        pthread_join(writers[i], NULL);
+    for (int i = 0; i < num_readers; i++) {
+        pthread_join(read[i], NULL);
     }
 
+    for (int i = 0; i < num_writers; i++) {
+        pthread_join(write[i], NULL);
+    }
 
-    // Destroy mutexes
-    pthread_mutex_destroy(&resource_mutex);
-    pthread_mutex_destroy(&reader_count_mutex);
+    free(read);
+    free(write);
+    free(reader_ids);
+    free(writer_ids);
 
+    pthread_mutex_destroy(&mutex);
+    pthread_mutex_destroy(&wrt);
 
     return 0;
 }
@@ -1267,201 +1249,202 @@ int main() {
 
 //reader writer semaphore
 
-import java.util.concurrent.Semaphore;
+#include <stdio.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <unistd.h>
+#include <stdlib.h>
 
+sem_t mutex;  // Semaphore for protecting read_count
+sem_t wrt;    // Semaphore for writer's mutual exclusion
+int read_count = 0;  // Number of readers
 
-class ReaderWriter {
-  private int readCount = 0; // Count of active readers
-  private final Semaphore mutex; // Mutex to protect readCount
-  private final Semaphore writeLock; // WriteLock to ensure only one writer
+// Reader function
+void *reader(void *arg) {
+    int reader_id = *((int *)arg);  // Reader ID
+    printf("Reader %d is trying to read\n", reader_id);
 
+    sem_wait(&mutex);  // Protect read_count
+    read_count++;
+    if (read_count == 1) {
+        sem_wait(&wrt);  // If first reader, lock writer semaphore
+    }
+    sem_post(&mutex);  // Release protection of read_count
 
-  public ReaderWriter() {
-    mutex = new Semaphore(1); // Binary semaphore for reader count update
-    writeLock = new Semaphore(1); // Binary semaphore for writer synchronization
-  }
+    // Reading section
+    printf("Reader %d is reading\n", reader_id);
+    sleep(1);  // Simulate reading
+    printf("Reader %d has finished reading\n", reader_id);
 
+    sem_wait(&mutex);  // Protect read_count
+    read_count--;
+    if (read_count == 0) {
+        sem_post(&wrt);  // If last reader, unlock writer semaphore
+    }
+    sem_post(&mutex);  // Release protection of read_count
 
-  // Reader class
-  class Reader implements Runnable {
-    private final String readerName;
+    return NULL;
+}
 
+// Writer function
+void *writer(void *arg) {
+    int writer_id = *((int *)arg);  // Writer ID
+    printf("Writer %d is trying to access the resource\n", writer_id);
 
-    Reader(String name) {
-      this.readerName = name;
+    sem_wait(&wrt);  // Lock writer semaphore (no readers or other writers)
+    printf("Writer %d is writing\n", writer_id);
+    sleep(1);  // Simulate writing
+    printf("Writer %d has finished writing\n", writer_id);
+
+    sem_post(&wrt);  // Release writer semaphore
+
+    return NULL;
+}
+
+int main() {
+    int num_readers = 5, num_writers = 3;
+
+    pthread_t *read = malloc(num_readers * sizeof(pthread_t));
+    pthread_t *write = malloc(num_writers * sizeof(pthread_t));
+    int *reader_ids = malloc(num_readers * sizeof(int));
+    int *writer_ids = malloc(num_writers * sizeof(int));
+
+    sem_init(&mutex, 0, 1);  // Binary semaphore for read_count protection
+    sem_init(&wrt, 0, 1);    // Binary semaphore for writer process
+
+    for (int i = 0; i < num_readers; i++) {
+        reader_ids[i] = i + 1;
+        pthread_create(&read[i], NULL, reader, &reader_ids[i]);
     }
 
-
-    @Override
-    public void run() {
-      try {
-        // Entry Section for Reader
-        mutex.acquire(); // Protecting readCount
-        readCount++;
-        if (readCount == 1) {
-          writeLock.acquire(); // First reader locks the writeLock
-        }
-        mutex.release(); // Release mutex after updating readCount
-
-
-        // Critical Section for Reader (Reading)
-        System.out.println(readerName + " is READING");
-
-
-        // Simulate reading with sleep
-        Thread.sleep(1000);
-
-
-        // Exit Section for Reader
-        mutex.acquire();
-        readCount--;
-        if (readCount == 0) {
-          writeLock.release(); // Last reader releases the writeLock
-        }
-        mutex.release();
-
-
-        System.out.println(readerName + " has FINISHED READING");
-
-
-      } catch (InterruptedException e) {
-        System.out.println(e.getMessage());
-      }
-    }
-  }
-
-
-  // Writer class
-  class Writer implements Runnable {
-    private final String writerName;
-
-
-    Writer(String name) {
-      this.writerName = name;
+    for (int i = 0; i < num_writers; i++) {
+        writer_ids[i] = i + 1;
+        pthread_create(&write[i], NULL, writer, &writer_ids[i]);
     }
 
-
-    @Override
-    public void run() {
-      try {
-        // Entry Section for Writer
-        writeLock.acquire(); // Writer acquires writeLock
-
-
-        // Critical Section for Writer (Writing)
-        System.out.println(writerName + " is WRITING");
-
-
-        // Simulate writing with sleep
-        Thread.sleep(1500);
-
-
-        // Exit Section for Writer
-        writeLock.release();
-
-
-        System.out.println(writerName + " has FINISHED WRITING");
-
-
-      } catch (InterruptedException e) {
-        System.out.println(e.getMessage());
-      }
+    for (int i = 0; i < num_readers; i++) {
+        pthread_join(read[i], NULL);
     }
-  }
 
+    for (int i = 0; i < num_writers; i++) {
+        pthread_join(write[i], NULL);
+    }
 
-  public static void main(String[] args) {
-    ReaderWriter rw = new ReaderWriter();
+    sem_destroy(&mutex);
+    sem_destroy(&wrt);
 
+    free(read);
+    free(write);
+    free(reader_ids);
+    free(writer_ids);
 
-    // Creating reader and writer threads
-    Thread reader1 = new Thread(rw.new Reader("Reader 1"));
-    Thread reader2 = new Thread(rw.new Reader("Reader 2"));
-    Thread writer1 = new Thread(rw.new Writer("Writer 1"));
-    Thread writer2 = new Thread(rw.new Writer("Writer 2"));
-
-
-    // Start threads
-    reader1.start();
-    writer1.start();
-    reader2.start();
-    writer2.start();
-  }
+    return 0;
 }
 
 
 --------------------------------------------------------------------------Producer-consumer mutex------------------------------------------------
 
-//producer consumer mutex
-
-#include <pthread.h>
 #include <stdio.h>
+#include <pthread.h>
 #include <stdlib.h>
+#include <unistd.h>
 
-
-#define BUFFER_SIZE 5
-
-
-int buffer[BUFFER_SIZE];
-int count = 0;
+int *buffer;  // Buffer pointer for dynamic allocation
+int count = 0;  // Counter to track number of items in buffer
+int buffer_size = 2;  // Buffer size will be taken from user
 pthread_mutex_t mutex;
-pthread_cond_t not_full, not_empty;
+pthread_cond_t cond_producer, cond_consumer;
 
-
-void* producer(void* arg) {
+// Producer function
+void *producer(void *arg) {
     int item;
-    for (int i = 0; i < 10; i++) {
+    int id = *((int *)arg);
+    for (int i = 0; i < 5; i++) {  // Produce 5 items per producer
         item = rand() % 100;
-        pthread_mutex_lock(&mutex);
-        while (count == BUFFER_SIZE)
-            pthread_cond_wait(&not_full, &mutex);
+
+        printf("Producer %d is trying to produce\n", id);
+        pthread_mutex_lock(&mutex);  // Lock the critical section
+
+        while (count == buffer_size) {
+            printf("Producer %d: Buffer is full, waiting...\n", id);
+            pthread_cond_wait(&cond_producer, &mutex);  // Wait if buffer is full
+        }
+
         buffer[count++] = item;
-        printf("Producer produced: %d\n", item);
-        pthread_cond_signal(&not_empty);
-        pthread_mutex_unlock(&mutex);
-        // Removed sleep(1); // No sleep for faster execution
+        printf("Producer %d: Produced %d.\nBuffer count: %d\n", id, item, count);
+
+        pthread_cond_signal(&cond_consumer);  // Signal consumer that item is produced
+        pthread_mutex_unlock(&mutex);  // Unlock the critical section
+
+        sleep(1);
     }
     return NULL;
 }
 
-
-void* consumer(void* arg) {
+// Consumer function
+void *consumer(void *arg) {
     int item;
-    for (int i = 0; i < 10; i++) {
-        pthread_mutex_lock(&mutex);
-        while (count == 0)
-            pthread_cond_wait(&not_empty, &mutex);
+    int id = *((int *)arg);
+    for (int i = 0; i < 5; i++) {  // Consume 5 items per consumer
+        printf("Consumer %d is trying to consume\n", id);
+        pthread_mutex_lock(&mutex);  // Lock the critical section
+
+        while (count == 0) {
+            printf("Consumer %d: Buffer is empty, waiting...\n", id);
+            pthread_cond_wait(&cond_consumer, &mutex);  // Wait if buffer is empty
+        }
+
         item = buffer[--count];
-        printf("Consumer consumed: %d\n", item);
-        pthread_cond_signal(&not_full);
-        pthread_mutex_unlock(&mutex);
-        // Removed sleep(1); // No sleep for faster execution
+        printf("Consumer %d: Consumed %d.\nBuffer count: %d\n", id, item, count);
+
+        pthread_cond_signal(&cond_producer);  // Signal producer that item is consumed
+        pthread_mutex_unlock(&mutex);  // Unlock the critical section
+
+        sleep(1);
     }
     return NULL;
 }
-
 
 int main() {
-    pthread_t prod_thread, cons_thread;
+    int num_producers = 2, num_consumers = 2;
 
+    buffer = (int *)malloc(buffer_size * sizeof(int));
 
     pthread_mutex_init(&mutex, NULL);
-    pthread_cond_init(&not_full, NULL);
-    pthread_cond_init(&not_empty, NULL);
+    pthread_cond_init(&cond_producer, NULL);
+    pthread_cond_init(&cond_consumer, NULL);
 
+    pthread_t *prod = (pthread_t *)malloc(num_producers * sizeof(pthread_t));
+    pthread_t *cons = (pthread_t *)malloc(num_consumers * sizeof(pthread_t));
+    int *prod_ids = (int *)malloc(num_producers * sizeof(int));
+    int *cons_ids = (int *)malloc(num_consumers * sizeof(int));
 
-    pthread_create(&prod_thread, NULL, producer, NULL);
-    pthread_create(&cons_thread, NULL, consumer, NULL);
+    for (int i = 0; i < num_producers; i++) {
+        prod_ids[i] = i + 1;
+        pthread_create(&prod[i], NULL, producer, &prod_ids[i]);
+    }
 
+    for (int i = 0; i < num_consumers; i++) {
+        cons_ids[i] = i + 1;
+        pthread_create(&cons[i], NULL, consumer, &cons_ids[i]);
+    }
 
-    pthread_join(prod_thread, NULL);
-    pthread_join(cons_thread, NULL);
+    for (int i = 0; i < num_producers; i++) {
+        pthread_join(prod[i], NULL);
+    }
 
+    for (int i = 0; i < num_consumers; i++) {
+        pthread_join(cons[i], NULL);
+    }
 
     pthread_mutex_destroy(&mutex);
-    pthread_cond_destroy(&not_full);
-    pthread_cond_destroy(&not_empty);
-
+    pthread_cond_destroy(&cond_producer);
+    pthread_cond_destroy(&cond_consumer);
+    free(buffer);  
+    free(prod);   
+    free(cons);    
+    free(prod_ids);
+    free(cons_ids);
 
     return 0;
 }
@@ -1470,104 +1453,113 @@ int main() {
 
 //producer consumer semaphore
 
-import java.util.LinkedList;
-import java.util.concurrent.Semaphore;
+#include <stdio.h>
+#include <pthread.h>
+#include <semaphore.h>
+#include <stdlib.h>
+#include <unistd.h>
 
+int *buffer;   // Buffer pointer for dynamic allocation
+int count = 0; // Counter to track number of items in buffer
+sem_t empty, full;
+pthread_mutex_t mutex;
+int buffer_size = 2; // Buffer size will be taken from user
 
-class ProducerConsumer {
-  private final LinkedList<Integer> buffer = new LinkedList<>();
-  private final int capacity = 5; // Size of the buffer
-  private final Semaphore mutex; // Mutual exclusion for buffer access
-  private final Semaphore empty; // Semaphore to count empty slots in buffer
-  private final Semaphore full; // Semaphore to count full slots in buffer
+// Producer function
+void *producer(void *arg)
+{
+    int item;
+    int id = *((int *)arg);
+    for (int i = 0; i < 5; i++)
+    { // Produce 5 items per producer
+        item = rand() % 100;
 
+        printf("Producer %d is trying to produce\n", id);
+        sem_wait(&empty); // Wait if buffer is full
 
-  public ProducerConsumer() {
-    mutex = new Semaphore(1); // Binary semaphore for mutual exclusion
-    empty = new Semaphore(capacity); // Counting semaphore for empty slots
-    full = new Semaphore(0); // Counting semaphore for full slots
-  }
+        pthread_mutex_lock(&mutex); // Lock the critical section
 
+        buffer[count++] = item;
+        printf("Producer %d: Produced %d.\nBuffer count: %d\n", id, item, count);
 
-  // Producer class
-  class Producer implements Runnable {
-    @Override
-    public void run() {
-      int item = 0; // Item to be produced
-      while (true) {
-        try {
-          empty.acquire(); // Wait if buffer is full
-          mutex.acquire(); // Protect buffer access
+        pthread_mutex_unlock(&mutex); // Unlock the critical section
+        sem_post(&full);              // Signal that buffer has new item
 
-
-          // Critical Section for Producer (Inserting item)
-          buffer.add(item);
-          System.out.println("Produced: " + item);
-          item++; // Increment item to produce new one
-
-
-          mutex.release(); // Release buffer access
-          full.release(); // Signal that there's a full slot now
-
-
-          // Simulate production time
-          Thread.sleep(1000);
-        } catch (InterruptedException e) {
-          System.out.println(e.getMessage());
-        }
-      }
+        sleep(1);
     }
-  }
+    return NULL;
+}
 
+// Consumer function
+void *consumer(void *arg)
+{
+    int item;
+    int id = *((int *)arg);
+    for (int i = 0; i < 5; i++)
+    { // Consume 5 items per consumer
+        printf("Consumer %d is trying to consume\n", id);
+        sem_wait(&full); // Wait if buffer is empty
 
-  // Consumer class
-  class Consumer implements Runnable {
-    @Override
-    public void run() {
-      while (true) {
-        try {
-          full.acquire(); // Wait if buffer is empty
-          mutex.acquire(); // Protect buffer access
+        pthread_mutex_lock(&mutex); // Lock the critical section
 
+        item = buffer[--count];
+        printf("Consumer %d: Consumed %d.\nBuffer count: %d\n", id, item, count);
 
-          // Critical Section for Consumer (Removing item)
-          int item = buffer.removeFirst();
-          System.out.println("Consumed: " + item);
+        pthread_mutex_unlock(&mutex); // Unlock the critical section
+        sem_post(&empty);             // Signal that buffer has empty space
 
-
-          mutex.release(); // Release buffer access
-          empty.release(); // Signal that there's an empty slot now
-
-
-          // Simulate consumption time
-          Thread.sleep(1500);
-        } catch (InterruptedException e) {
-          System.out.println(e.getMessage());
-        }
-      }
+        sleep(1);
     }
-  }
+    return NULL;
+}
 
+int main()
+{
+    int num_producers = 2, num_consumers = 2;
 
-  public static void main(String[] args) {
-    ProducerConsumer pc = new ProducerConsumer();
+    buffer = (int *)malloc(buffer_size * sizeof(int));
 
+    sem_init(&empty, 0, buffer_size);
+    sem_init(&full, 0, 0);
+    pthread_mutex_init(&mutex, NULL);
 
-    // Creating producer and consumer threads
-    Thread producer1 = new Thread(pc.new Producer());
-    Thread producer2 = new Thread(pc.new Producer());
-    Thread producer3 = new Thread(pc.new Producer());
-    Thread consumer1 = new Thread(pc.new Consumer());
-    Thread consumer2 = new Thread(pc.new Consumer());
+    pthread_t *prod = (pthread_t *)malloc(num_producers * sizeof(pthread_t));
+    pthread_t *cons = (pthread_t *)malloc(num_consumers * sizeof(pthread_t));
+    int *prod_ids = (int *)malloc(num_producers * sizeof(int));
+    int *cons_ids = (int *)malloc(num_consumers * sizeof(int));
 
+    for (int i = 0; i < num_producers; i++)
+    {
+        prod_ids[i] = i + 1;
+        pthread_create(&prod[i], NULL, producer, &prod_ids[i]);
+    }
 
-    // Start threads
-    producer1.start();
-    producer2.start();
-    producer3.start();
-    consumer1.start();
-    consumer2.start();
-  }
+    for (int i = 0; i < num_consumers; i++)
+    {
+        cons_ids[i] = i + 1;
+        pthread_create(&cons[i], NULL, consumer, &cons_ids[i]);
+    }
+
+    for (int i = 0; i < num_producers; i++)
+    {
+        pthread_join(prod[i], NULL);
+    }
+
+    for (int i = 0; i < num_consumers; i++)
+    {
+        pthread_join(cons[i], NULL);
+    }
+
+    sem_destroy(&empty);
+    sem_destroy(&full);
+    pthread_mutex_destroy(&mutex);
+    free(buffer);
+    free(prod);
+    free(cons);
+    free(prod_ids);
+    free(cons_ids);
+
+    return 0;
 }
 
 
@@ -2536,126 +2528,167 @@ int main()
 
 //  Oprand error in a given job
 
-// Define a custom exception to simulate an operand error interrupt
-class OperandError extends Exception {
-    public OperandError(String message) {
-        super(message);
+import java.util.*;
+
+public class OperandChecker {
+    // List of valid opcodes
+    private static final Set<String> validOpcodes = new HashSet<>(Arrays.asList(
+            "GD", "PD", "LR", "SR", "H"));
+
+    // Define the valid range for operands (00-99 for 2-digit numbers)
+    private static final int MIN_OPERAND = 0;
+    private static final int MAX_OPERAND = 99;
+
+    public static void main(String[] args) {
+        // Sample job input
+        String job = "$AMJ020200160005\n" +
+                "GD20PD2ALR20SR30SR31PD30SR40SR41SR42PD40\n" +
+                "SR50SR51PD50SR60PD60H\n" +
+                "$DTA\n" +
+                "*\n" +
+                "$END0202";
+
+        // Process the job
+        checkOperandErrors(job);
     }
-}
 
-public class OperandErrorCheck {
+    // Method to check for operand errors
+    public static void checkOperandErrors(String job) {
+        // Split job into lines
+        String[] lines = job.split("\n");
 
-    // Function to check for operand errors in a job
-    public static void checkOperandError(String[][] operations) throws OperandError {
-        for (int i = 0; i < operations.length; i++) {
-            try {
-                String operator = operations[i][0];
-                double operand1 = Double.parseDouble(operations[i][1]);
-                double operand2 = Double.parseDouble(operations[i][2]);
+        // Boolean to track if we are in the instructions section
+        boolean inInstructions = false;
 
-                // Simulate different operations and check for errors
-                double result = 0;
-                switch (operator) {
-                    case "add":
-                        result = operand1 + operand2;
-                        break;
-                    case "subtract":
-                        result = operand1 - operand2;
-                        break;
-                    case "multiply":
-                        result = operand1 * operand2;
-                        break;
-                    case "divide":
-                        if (operand2 == 0) {
-                            throw new OperandError("Operand error in operation " + i + ": Division by zero");
-                        }
-                        result = operand1 / operand2;
-                        break;
-                    default:
-                        throw new OperandError(
-                                "Operand error in operation " + i + ": Undefined operator '" + operator + "'");
-                }
+        // Loop through each line
+        for (String line : lines) {
+            // Identify the start and end of the instructions section
+            if (line.startsWith("$AMJ")) {
+                inInstructions = true;
+                continue;
+            }
+            if (line.startsWith("$DTA") || line.startsWith("$END")) {
+                inInstructions = false;
+            }
 
-                // Output the result of the operation
-                System.out.println("Operation " + i + " (" + operator + "): " + operand1 + " " + operator + " "
-                        + operand2 + " = " + result);
-            } catch (NumberFormatException e) {
-                // Handle invalid operand types (e.g., non-numeric strings)
-                throw new OperandError("Operand error in operation " + i + ": Incompatible operand types.");
+            // Process instructions only if in the instructions section
+            if (inInstructions) {
+                // Validate each instruction in the line
+                checkInstructions(line);
             }
         }
     }
 
-    public static void main(String[] args) {
-        // Define a set of operations (operator, operand1, operand2)
-        String[][] operations = {
-                { "add", "10", "5" }, // Valid operation
-                { "subtract", "7", "3" }, // Valid operation
-                { "divide", "8", "0" }, // Division by zero (operand error)
-                { "multiply", "6", "two" }, // Invalid operand type (operand error)
-                { "add", "4", "2" }, // Valid operation
-                { "mod", "5", "2" } // Undefined operator (operand error)
-        };
+    // Method to check each instruction in the line
+    public static void checkInstructions(String line) {
+        // Process each opcode-operand pair (every 4 characters)
+        for (int i = 0; i < line.length(); i += 4) {
+            if (i + 4 <= line.length()) {
+                String opcode = line.substring(i, i + 2); // Extract the opcode part
+                String operandStr = line.substring(i + 2, i + 4); // Extract the operand part
 
-        // Run the check and handle the operand error interrupt
-        try {
-            checkOperandError(operations);
-        } catch (OperandError e) {
-            System.out.println("Interrupt: " + e.getMessage());
+                // Validate opcode
+                if (!validOpcodes.contains(opcode)) {
+                    raiseOpcodeInterrupt(opcode);
+                } else {
+                    // Validate operand
+                    if (!isValidOperand(operandStr)) {
+                        raiseOperandInterrupt(operandStr);
+                    }
+                }
+            }
         }
     }
-}
 
+    // Method to check if the operand is valid (numeric and within range)
+    public static boolean isValidOperand(String operand) {
+        try {
+            int value = Integer.parseInt(operand);
+            return value >= MIN_OPERAND && value <= MAX_OPERAND;
+        } catch (NumberFormatException e) {
+            return false; // Operand is not a valid number
+        }
+    }
+
+    // Method to raise an interrupt for invalid opcodes
+    public static void raiseOpcodeInterrupt(String invalidOpcode) {
+        System.err.println("Interrupt Raised: Invalid Opcode Detected - " + invalidOpcode);
+    }
+
+    // Method to raise an interrupt for invalid operands
+    public static void raiseOperandInterrupt(String invalidOperand) {
+        System.err.println("Interrupt Raised: Invalid Operand Detected - " + invalidOperand);
+    }
+}
 
 ---------------------------------------------------------------------------Opcode error---------------------------------------------------------
 
 // Opcode error in a given job
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 public class OpcodeChecker {
-    // Define a set of valid opcodes
-    private static final Set<String> VALID_OPCODES = new HashSet<>(Arrays.asList(
-            "MOV", "ADD", "SUB", "STORE", "LOAD", "MUL", "DIV", "JMP", "CMP"
-    // Add more valid opcodes as needed
-    ));
+    // List of valid opcodes
+    private static final Set<String> validOpcodes = new HashSet<>(Arrays.asList(
+            "GD", "PD", "LR", "SR", "H"));
 
     public static void main(String[] args) {
-        // Hardcoded array of instructions
-        String[] instructions = {
-                "MOV A, 5",
-                "ADD B, A",
-                "INVALID_OP D, E" // This instruction contains an invalid opcode
-        };
+        // Sample job input
+        String job = "$AMJ020200160005\n" +
+                "GD20PD20LD20SR30SR31PD30SR40SR41SR42PD40\n" +
+                "SR50SR51PD50SR60PD60H\n" +
+                "$DTA\n" +
+                "*\n" +
+                "$END0202";
 
-        System.out.println("Checking instructions for opcode errors...");
-
-        for (int i = 0; i < instructions.length; i++) {
-            String instruction = instructions[i].trim();
-            System.out.println("Instruction " + (i + 1) + ": " + instruction);
-
-            // Check if the opcode is valid
-            if (!isValidOpcode(instruction)) {
-                System.out.println("Opcode Error: Invalid opcode found in instruction '" + instruction + "'");
-                System.out.println("Interrupt raised due to invalid opcode.");
-                return; // Stop further execution if an invalid opcode is found
-            }
-        }
-
-        System.out.println("All instructions are valid. No opcode errors detected.");
+        // Process the job
+        checkOpcodeErrors(job);
     }
 
-    private static boolean isValidOpcode(String instruction) {
-        // Split the instruction by space to extract the opcode
-        String[] parts = instruction.split(" ");
-        if (parts.length == 0) {
-            return false; // Empty instruction
-        }
+    // Method to check for opcode errors
+    public static void checkOpcodeErrors(String job) {
+        // Split job into lines
+        String[] lines = job.split("\n");
 
-        String opcode = parts[0]; // The first part is the opcode
-        return VALID_OPCODES.contains(opcode); // Check if the opcode is in the set of valid opcodes
+        // Boolean to track if we are in the instructions section
+        boolean inInstructions = false;
+
+        // Loop through each line
+        for (String line : lines) {
+            // Skip lines until we reach the instructions part
+            if (line.startsWith("$AMJ")) {
+                inInstructions = true;
+                continue;
+            }
+            if (line.startsWith("$DTA") || line.startsWith("$END")) {
+                inInstructions = false;
+            }
+
+            // Process instructions only if in the instructions section
+            if (inInstructions) {
+                // Extract opcodes and validate them
+                checkInstructions(line);
+            }
+        }
+    }
+
+    // Method to check each instruction in the line
+    public static void checkInstructions(String line) {
+        // Split line into opcode sequences (2 chars for opcode, rest for operand)
+        for (int i = 0; i < line.length(); i += 4) {
+            if (i + 2 <= line.length()) {
+                String opcode = line.substring(i, i + 2); // Extract the opcode part
+                // Validate opcode
+                if (!validOpcodes.contains(opcode)) {
+                    raiseInterrupt(opcode);
+                }
+            }
+        }
+    }
+
+    // Method to raise an interrupt if an invalid opcode is found
+    public static void raiseInterrupt(String invalidOpcode) {
+        System.err.println("Interrupt Raised: Invalid Opcode Detected - " + invalidOpcode);
     }
 }
 

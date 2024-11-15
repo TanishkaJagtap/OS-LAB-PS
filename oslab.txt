@@ -729,51 +729,81 @@ int main()
 -------------------------------------------------------------------------read and copy file contents-------------------------------------------
 //read and copy the contents of file
 
-import java.io.*;
+//Character by Character
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.Scanner;
 
-public class FileDisplay {
-
+public class CharacterByCharacterCopy {
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
-        // Prompt for the source file name
-        System.out.print("Enter the source file name: ");
-        String sourceFile = scanner.nextLine();
-        // Display contents character by character
-        displayCharacterByCharacter(sourceFile);
-        // Display contents line by line
-        displayLineByLine(sourceFile);
-    }
 
-    // Method to display file content character by character
-    public static void displayCharacterByCharacter(String source) {
-        try (FileReader fileReader = new FileReader(source)) {
+        // Get the source and destination file paths from the user
+        System.out.print("Enter source file path: ");
+        String sourcePath = scanner.nextLine();
+
+        System.out.print("Enter destination file path: ");
+        String destPath = scanner.nextLine();
+
+        try (FileReader sourceFile = new FileReader(sourcePath);
+             FileWriter destFile = new FileWriter(destPath)) {
+
             int character;
-            System.out.println("Displaying contents character by character:");
-            while ((character = fileReader.read()) != -1) {
-                System.out.print((char) character); // Print each character
+            
+            // Read the source file character by character and write to the destination file
+            while ((character = sourceFile.read()) != -1) {
+                destFile.write(character);
             }
-            System.out.println(); // Newline after character-by-character display
-        } catch (IOException e) {
-            System.out.println("An error occurred during character-by-character display: " + e.getMessage());
-        }
-    }
 
-    // Method to display file content line by line
-    public static void displayLineByLine(String source) {
-        try (BufferedReader bufferedReader = new BufferedReader(new FileReader(source))) {
-            String line;
-            System.out.println("Displaying contents line by line:");
-            while ((line = bufferedReader.readLine()) != null) {
-                System.out.println(line); // Print each line
-            }
+            System.out.println("File copied successfully (character by character).");
         } catch (IOException e) {
-            System.out.println("An error occurred during line-by-line display: " + e.getMessage());
+            System.out.println("An error occurred: " + e.getMessage());
+        } finally {
+            scanner.close();
         }
     }
 }
 
-//Source.txt
+//Line by line
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.Scanner;
+
+public class LineByLineCopy {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+
+        // Get the source and destination file paths from the user
+        System.out.print("Enter source file path: ");
+        String sourcePath = scanner.nextLine();
+
+        System.out.print("Enter destination file path: ");
+        String destPath = scanner.nextLine();
+
+        try (BufferedReader sourceFile = new BufferedReader(new FileReader(sourcePath));
+             BufferedWriter destFile = new BufferedWriter(new FileWriter(destPath))) {
+
+            String line;
+            
+            // Read the source file line by line and write to the destination file
+            while ((line = sourceFile.readLine()) != null) {
+                destFile.write(line);
+                destFile.newLine(); // Add a new line in the destination file
+            }
+
+            System.out.println("File copied successfully (line by line).");
+        } catch (IOException e) {
+            System.out.println("An error occurred: " + e.getMessage());
+        } finally {
+            scanner.close();
+        }
+    }
+}
+
 
 -------------------------------------------------------------------------Deadlock detection program---------------------------------------------
 //deadlock detection system
